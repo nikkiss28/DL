@@ -1,41 +1,21 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.datasets import make_moons
+X, y = make_moons(n_samples=1000, noise=0.1)
+X_scaled=StandardScaler().fit_transform(X)
+pca=PCA(n_components=1)
+X_pca=pca.fit_transform(X_scaled)
+X_recons_pca=pca.inverse_transform(X_pca)
+mse=mean_squared_error(X_scaled,X_recons_pca)
+print(mse)
 
-n_samples = 1000
-noise = 0.1
-dataset, labels = make_moons(n_samples=n_samples, noise=noise, random_state=42)
+autoencoder=Sequential([
+    Dense(1,activation='relu',input_shape=(2,)),
+    Dense(2,activation='linear')
+])
 
-plt.figure(figsize=(8, 8))
-plt.scatter(dataset[:, 0], dataset[:, 1])
-
-plt.title("Non-Symmetric Data (Crescent Shape)")
-plt.xlabel("X-axis")
-plt.ylabel("Y-axis")
-plt.axis('equal')
-plt.show()
-
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
-
-pca = PCA(n_components=2)
-principal_components = pca.fit_transform(dataset)
-
-inverse_transformed_data = pca.inverse_transform(principal_components)
-
-mse = mean_squared_error(dataset, inverse_transformed_data)
-print("Mean Squared Error for PCA & Inverse PCA is ", mse)
-
-import numpy as np
-from sklearn.neural_network import MLPRegressor
-from sklearn.metrics import mean_squared_error
-
-autoencoder = MLPRegressor(hidden_layer_sizes=(2024, 2, 2024), activation='relu', solver='adam', max_iter=100000000)
-
-autoencoder.fit(dataset, dataset)
-
-reconstructed_data = autoencoder.predict(dataset)
-
-mse = mean_squared_error(dataset, reconstructed_data)
-
-print("Mean Squared Error for Autoencoder is ", mse)
+autoencoder.compile(loss='mse',optimizer='adam')
+autoencoder.fit(X_scaled,X_scaled,epochs=100,batch_size=16,verbose=0)
+encoder=Sequential(autoencoder.layers[:1])
+X_encoded=encoder.predict(X_scaled)
+X_ae_recons=autoencoder.predict(X_scaled)
+mse_ae=mean_squared_error(X_scaled,X_ae_recons)
+print(mse_ae)
